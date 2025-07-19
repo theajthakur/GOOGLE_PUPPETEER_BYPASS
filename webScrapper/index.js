@@ -1,35 +1,34 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require("puppeteer");
+require("dotenv").config();
+
 async function searchGoogle(keyword) {
-  const browser = await puppeteer.launch({headless:false});
+  const browser = await puppeteer.launch({
+    headless: true,
+    executablePath: process.env.ExecutablePath,
+    userDataDir: process.env.USER_DATA,
+    defaultViewport: null,
+  });
+
   const page = await browser.newPage();
-  
-  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(keyword)}`
+  await page.goto(
+    `https://www.google.com/search?q=${encodeURIComponent(keyword)}`,
+    { waitUntil: "domcontentloaded" }
+  );
 
-  await page.goto(searchUrl,{waitUntil: 'domcontentloaded'});
-  await page.waitForSelector('.tF2Cxc');
-  const links = await page.evaluate(()=>{
-    results = [];
-    const elements = document.querySelector('a h3');
+  const headings = await page.evaluate(() => {
+    const hs = [];
+    for (let i = 1; i <= 6; i++) {
+      document
+        .querySelectorAll(`h${i}`)
+        .forEach((h) => hs.push(h.innerText.trim()));
+    }
+    return hs;
+  });
 
-    elements.forEach(el => {
-      const parent = el.closest('a');
-      if(parent){
-        results.push({
-          title: el.innerText,
-          url: parent.href,
-        })
-      }
-    });
-    return results;
-  })
-
-  console.log("Top Google searches results: ");
-  links.forEach((link, index) =>{
-    console.log(`${index+1}.  ${link.title} -- ${link.url}`);
-  })
-
+  console.log(headings);
   await browser.close();
-
 }
 
-searchGoogle("Jaipur food bloggers");
+(async () => {
+  await searchGoogle("Food Vlogger");
+})();
